@@ -13,6 +13,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    exclude: ["src/**/*.int.test.ts", "node_modules/**"],
     // Valores SOMENTE para testes. Nunca reutilizar em dev ou produção.
     env: {
       DATABASE_URL: "postgresql://test:test@localhost:5432/test",
