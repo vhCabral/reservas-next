@@ -29,3 +29,7 @@ export const updateRoomSchema = z
 
 export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type UpdateRoomInput = z.infer<typeof updateRoomSchema>;
+
+export const setRoomResourcesSchema = z.strictObject({
+  resourceIds: z.array(z.uuid()).max(50),
+});
