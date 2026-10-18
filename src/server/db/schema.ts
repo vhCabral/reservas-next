@@ -107,3 +107,9 @@ export const reservations = pgTable(
     index("reservations_room_id_start_at_idx").on(t.roomId, t.startAt),
   ],
 );
+
+export const rateLimits = pgTable("rate_limits", {
+  key: varchar("key", { length: 128 }).primaryKey(),
+  count: integer("count").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+});
