@@ -38,3 +38,12 @@ export async function findUserByEmail(email: string) {
     .limit(1);
   return row ?? null;
 }
+
+export async function findUserById(id: string): Promise<PublicUser | null> {
+  const [row] = await db
+    .select(publicColumns)
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return row ?? null;
+}

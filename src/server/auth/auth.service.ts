@@ -1,3 +1,7 @@
+import { UnauthorizedError } from "@/server/http/errors";
+import { verifyPassword, verifyAgainstDummyHash } from "./password";
+import { findUserByEmail } from "./users.repository";
+import type { LoginInput } from "./schemas";
 import "server-only";
 import { ConflictError } from "@/server/http/errors";
 import { getDbErrorCode } from "@/server/db/pg-errors";
@@ -24,4 +28,30 @@ export async function registerUser(input: RegisterInput): Promise<PublicUser> {
     }
     throw error;
   }
+}
+
+const INVALID_CREDENTIALS = "Invalid email or password";
+
+export async function authenticate(input: LoginInput): Promise<PublicUser> {
+  const user = await findUserByEmail(input.email);
+
+  if (!user) {
+    // Gasta o mesmo tempo de um hash real: sem isso, a resposta mais rápida
+    // revelaria que o email não existe.
+    await verifyAgainstDummyHash(input.password);
+    throw new UnauthorizedError(INVALID_CREDENTIALS);
+  }
+
+  if (!(await verifyPassword(user.passwordHash, input.password))) {
+    throw new UnauthorizedError(INVALID_CREDENTIALS);
+  }
+
+  // Mensagem idêntica nos dois casos, e o hash nunca sai daqui.
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    createdAt: user.createdAt,
+  };
 }
