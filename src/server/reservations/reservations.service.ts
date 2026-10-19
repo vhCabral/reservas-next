@@ -1,6 +1,8 @@
 import "server-only";
 import { assertAdmin } from "@/server/auth/authorization";
 import type { PublicUser } from "@/server/auth/users.repository";
+import { listBusyIntervals } from "@/server/reservations/reservations.repository";
+import { getRoomFor } from "@/server/rooms/rooms.service"; // Novo import adicionado
 import { getDbErrorCode, PG_EXCLUSION_VIOLATION } from "@/server/db/pg-errors";
 import {
   ConflictError,
@@ -90,4 +92,16 @@ export async function cancelReservation(
   if (cancelled) return cancelled;
   // Outra requisição cancelou no meio: devolve o estado atual.
   return getReservationFor(actor, id);
+}
+
+export { getRoomFor };
+
+export async function getRoomAvailability(
+  actor: PublicUser,
+  roomId: string,
+  from: Date,
+  to: Date,
+) {
+  await getRoomFor(actor, roomId); // 404 se a sala não existe ou está inativa para USER
+  return listBusyIntervals(roomId, from, to);
 }

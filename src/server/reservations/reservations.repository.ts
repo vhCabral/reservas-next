@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
 import { db } from "@/server/db";
 import { reservations } from "@/server/db/schema";
 
@@ -47,4 +47,20 @@ export async function cancelConfirmedById(
     .where(and(eq(reservations.id, id), eq(reservations.status, "CONFIRMED")))
     .returning();
   return row ?? null;
+}
+
+// Só intervalos CONFIRMED que tocam a janela. Semiaberto: quem apenas encosta não conta.
+export async function listBusyIntervals(roomId: string, from: Date, to: Date) {
+  return db
+    .select({ startAt: reservations.startAt, endAt: reservations.endAt })
+    .from(reservations)
+    .where(
+      and(
+        eq(reservations.roomId, roomId),
+        eq(reservations.status, "CONFIRMED"),
+        lt(reservations.startAt, to),
+        gt(reservations.endAt, from),
+      ),
+    )
+    .orderBy(asc(reservations.startAt));
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { eq, inArray, like } from "drizzle-orm";
 import { db } from "@/server/db";
+import { getRoomAvailability } from "@/server/reservations/reservations.service";
 import { reservations, rooms, users } from "@/server/db/schema";
 import { registerUser } from "@/server/auth/auth.service";
 import type { PublicUser } from "@/server/auth/users.repository";
@@ -242,5 +243,39 @@ describe("listar", () => {
     expect(
       (await listReservationsFor(admin, { scope: "all" })).length,
     ).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("disponibilidade", () => {
+  it("mostra só intervalos CONFIRMED, sem dados de usuário", async () => {
+    const a = await createReservation(ana, {
+      roomId,
+      startAt: at(2, 10),
+      endAt: at(2, 11),
+    });
+    const b = await createReservation(bob, {
+      roomId,
+      startAt: at(2, 12),
+      endAt: at(2, 13),
+    });
+    await cancelReservation(bob, b.id);
+
+    const busy = await getRoomAvailability(bob, roomId, at(2, 0), at(3, 0));
+    expect(busy).toEqual([{ startAt: a.startAt, endAt: a.endAt }]);
+    expect(Object.keys(busy[0]).sort()).toEqual(["endAt", "startAt"]);
+  });
+
+  it("janela que só encosta no intervalo não o inclui", async () => {
+    await createReservation(ana, {
+      roomId,
+      startAt: at(2, 10),
+      endAt: at(2, 11),
+    });
+    expect(
+      await getRoomAvailability(bob, roomId, at(2, 11), at(2, 12)),
+    ).toEqual([]);
+    expect(await getRoomAvailability(bob, roomId, at(2, 9), at(2, 10))).toEqual(
+      [],
+    );
   });
 });
