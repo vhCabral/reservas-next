@@ -43,6 +43,8 @@ jobs:
           cache: npm
 
       - run: npm ci
+      # Gera os tipos globais do Next (LayoutProps, PageProps), que o tsc usa.
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm test
