@@ -52,7 +52,6 @@ jobs:
       - run: npm run test:integration
       - run: npm run build
 
-      # Informativo por enquanto: revisamos o resultado antes de torná-lo bloqueante.
+      # Bloqueante: falha de severidade alta em dependência de produção barra o CI.
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
-        continue-on-error: true
