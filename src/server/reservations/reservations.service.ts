@@ -2,14 +2,14 @@ import "server-only";
 import { assertAdmin } from "@/server/auth/authorization";
 import type { PublicUser } from "@/server/auth/users.repository";
 import { listBusyIntervals } from "@/server/reservations/reservations.repository";
-import { getRoomFor } from "@/server/rooms/rooms.service"; // Novo import adicionado
+import { getRoomFor } from "@/server/rooms/rooms.service";
 import { getDbErrorCode, PG_EXCLUSION_VIOLATION } from "@/server/db/pg-errors";
 import {
   ConflictError,
   NotFoundError,
   UnprocessableEntityError,
 } from "@/server/http/errors";
-import { findRoomById } from "@/server/rooms/rooms.repository";
+
 import { validateReservationWindow } from "./reservation-policy";
 import {
   cancelConfirmedById,
@@ -29,8 +29,10 @@ export async function createReservation(
   const problem = validateReservationWindow(input.startAt, input.endAt, now);
   if (problem) throw new UnprocessableEntityError(problem);
 
-  const room = await findRoomById(input.roomId);
-  if (!room || !room.active) throw new NotFoundError("Room not found");
+  // Passa pelo serviço de rooms: ele já esconde sala inexistente (404).
+  const room = await getRoomFor(actor, input.roomId);
+  // Reservar sala inativa é proibido para todos, inclusive ADMIN.
+  if (!room.active) throw new NotFoundError("Room not found");
 
   try {
     // userId vem da sessão, nunca do corpo da requisição.
@@ -93,8 +95,6 @@ export async function cancelReservation(
   // Outra requisição cancelou no meio: devolve o estado atual.
   return getReservationFor(actor, id);
 }
-
-export { getRoomFor };
 
 export async function getRoomAvailability(
   actor: PublicUser,
