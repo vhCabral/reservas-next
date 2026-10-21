@@ -196,6 +196,10 @@ A especificação completa (OpenAPI 3.1) é servida em **`GET /api/openapi.json`
 | `POST`          | `/api/reservations/{id}/cancel` | dono ou admin       |
 | `GET`           | `/api/openapi.json`             | público             |
 
+## Decisões de arquitetura
+
+As principais decisões, com o contexto, as alternativas descartadas e as consequências, estão registradas em [`docs/adr`](docs/adr/README.md).
+
 ## Limitações conhecidas
 
 Registradas aqui de propósito: saber o que não está coberto faz parte de uma boa decisão de segurança.
