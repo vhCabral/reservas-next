@@ -230,7 +230,7 @@ export function buildOpenApiDocument(): Json {
           responses: {
             "200": {
               description: "Resources",
-              content: jsonContent(arrayOf("Resource")),
+              content: jsonContent(arrayOf("ResourceSummary")),
             },
             ...errors(400, 401, 404),
           },

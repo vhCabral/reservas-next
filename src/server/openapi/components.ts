@@ -45,6 +45,12 @@ export const resourceResponse = z.object({
   updatedAt: isoDateTime,
 });
 
+// Resumo usado nas listas de recursos DE UMA SALA: sem datas de criação/edição.
+export const resourceSummaryResponse = resourceResponse.omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const reservationResponse = z.object({
   id: z.uuid(),
   userId: z.uuid(),
@@ -127,6 +133,7 @@ const responses = {
   User: userResponse,
   Room: roomResponse,
   Resource: resourceResponse,
+  ResourceSummary: resourceSummaryResponse,
   Reservation: reservationResponse,
   BusyInterval: busyIntervalResponse,
   ErrorBody: errorBodyResponse,
