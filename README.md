@@ -15,8 +15,8 @@ API para reservar salas e auditórios, feita para ser **segura por construção*
 - [Segurança](#segurança)
 - [Regras de negócio](#regras-de-negócio)
 - [API](#api)
+- [Deploy](#deploy)
 - [Limitações conhecidas](#limitações-conhecidas)
-- [Roteiro](#roteiro)
 
 ## Stack
 
@@ -200,6 +200,53 @@ A especificação completa (OpenAPI 3.1) é servida em **`GET /api/openapi.json`
 
 As principais decisões, com o contexto, as alternativas descartadas e as consequências, estão registradas em [`docs/adr`](docs/adr/README.md).
 
+## Deploy
+
+A API está publicada em **https://reservas-next-ten.vercel.app** (a documentação OpenAPI fica em [`/api/openapi.json`](https://reservas-next-ten.vercel.app/api/openapi.json)).
+
+| Peça       | Serviço                                                           |
+| ---------- | ----------------------------------------------------------------- |
+| Hospedagem | Vercel (plano Hobby), com deploy automático a cada push na `main` |
+| Banco      | Supabase (PostgreSQL, plano gratuito), região East US             |
+
+As decisões e os motivos estão no [ADR 0010](docs/adr/0010-deploy-supabase-e-vercel.md).
+
+### Variáveis de ambiente de produção
+
+Cadastradas na Vercel, **somente no ambiente Production**. Os valores nunca vão para o repositório.
+
+| Variável                 | Valor                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | URL do Transaction pooler do Supabase (porta 6543). Marcada como _Sensitive_                 |
+| `DATABASE_SSL`           | `true` (conexão criptografada com o certificado do Supabase verificado)                      |
+| `JWT_SECRET`             | Segredo novo e exclusivo de produção, com pelo menos 32 caracteres. Marcada como _Sensitive_ |
+| `JWT_EXPIRATION_MINUTES` | `15`                                                                                         |
+
+### Aplicar migrações em produção
+
+As migrações **não** rodam sozinhas no deploy. Elas são aplicadas de propósito, a partir do computador de quem publica, usando o Session pooler (porta 5432) em um arquivo local ignorado pelo Git (`.env.production.migrate`, com uma linha `DATABASE_URL=...`):
+
+```powershell
+$env:ENV_FILE=".env.production.migrate"; npm run db:migrate; Remove-Item Env:ENV_FILE
+```
+
+O comando imprime o host usado (nunca a senha): confira que é o do Supabase e não `localhost`. O `drizzle-kit` pode terminar sem mensagem mesmo quando falha; para ter certeza, consulte as tabelas no banco.
+
+### Primeiro administrador
+
+O cadastro público sempre cria `USER`. Para promover alguém, no SQL Editor do Supabase:
+
+```sql
+update users set role = 'ADMIN' where email = 'seu-email@exemplo.com';
+```
+
+### Verificado em produção
+
+- Documentação pública por HTTPS, cadastro e login com cookie `__Host-session` (`Secure`, `HttpOnly`, `SameSite=Lax`).
+- Usuário comum criando sala recebe `403`; sem cookie, `401`.
+- A mesma reserva repetida recebe `409`, vindo da restrição do banco.
+- Depois de 5 logins errados, o limite responde `429`.
+
 ## Limitações conhecidas
 
 Registradas aqui de propósito: saber o que não está coberto faz parte de uma boa decisão de segurança.
@@ -211,15 +258,3 @@ Registradas aqui de propósito: saber o que não está coberto faz parte de uma 
 - **Nome de recurso único diferencia maiúsculas de minúsculas.** A correção prevista é um índice único sobre `lower(name)`.
 - **Não há tela nem rota para gerenciar usuários**; a promoção a administrador é feita direto no banco.
 - **Linhas expiradas da tabela de limite de tentativas ainda não são limpas** por uma rotina agendada.
-
-## Roteiro
-
-- [ ] Frontend (React dentro do Next)
-- [ ] Deploy em Supabase (banco) e Vercel (hospedagem), com HTTPS
-- [ ] Pedido de reserva antecipada: reservas com mais de 90 dias entram como `PENDING` e dependem de aprovação do administrador (por exemplo, eventos como a Oktoberfest, com meses de antecedência)
-- [ ] Rotina de limpeza do limite de tentativas
-- [ ] Migração para TypeScript 6 e ESLint 10
-
-## Como o projeto foi construído
-
-Desenvolvido com "Vibe Coding": um assistente de IA escreve o código a partir de requisitos, e cada passo é revisado, executado e validado por testes automatizados antes de seguir. Nada é dado como funcionando sem ter sido executado.

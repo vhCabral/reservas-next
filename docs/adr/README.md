@@ -13,3 +13,4 @@ Cada arquivo registra uma decisão importante: o contexto, o que foi escolhido, 
 | [0007](0007-testes-com-postgresql-real.md) | Testes com PostgreSQL de verdade, sem Docker |
 | [0008](0008-regras-de-arquitetura.md) | Regras de arquitetura verificadas automaticamente |
 | [0009](0009-openapi-e-teste-de-contrato.md) | OpenAPI gerada dos schemas e teste de contrato |
+| [0010](0010-deploy-supabase-e-vercel.md) | Deploy no Supabase e na Vercel |
