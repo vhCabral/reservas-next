@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildSchedule } from "./horarios";
+import {
+  buildSchedule,
+  buildWindow,
+  dayKey,
+  describeWindow,
+  DURATION_OPTIONS_MIN,
+  formatDuration,
+} from "./horarios";
 
 // 12:00 em Brasília (UTC-3) de domingo, 25/10/2026.
 const now = new Date("2026-10-25T15:00:00Z");
@@ -98,5 +105,51 @@ describe("buildSchedule", () => {
       3,
     );
     expect(schedule.flatMap((d) => d.busy)).toEqual([]);
+  });
+});
+
+describe("buildWindow", () => {
+  it("monta início e fim em horário de Brasília", () => {
+    const w = buildWindow("2026-10-26", "14:00", 90);
+    expect(w?.startAt.toISOString()).toBe("2026-10-26T17:00:00.000Z");
+    expect(w?.endAt.toISOString()).toBe("2026-10-26T18:30:00.000Z");
+  });
+
+  it("recusa datas que não existem (30/02 não vira 02/03)", () => {
+    expect(buildWindow("2026-02-30", "10:00", 60)).toBeNull();
+    expect(buildWindow("2026-13-01", "10:00", 60)).toBeNull();
+  });
+
+  it("recusa hora impossível", () => {
+    expect(buildWindow("2026-10-26", "25:00", 60)).toBeNull();
+  });
+});
+
+describe("dayKey", () => {
+  it("usa o dia de Brasília: 01:00Z ainda é o dia anterior", () => {
+    expect(dayKey(new Date("2026-10-26T01:00:00Z"))).toBe("2026-10-25");
+  });
+});
+
+describe("describeWindow e formatDuration", () => {
+  it("descreve a reserva em português", () => {
+    const text = describeWindow(
+      new Date("2026-10-26T17:00:00Z"),
+      new Date("2026-10-26T18:30:00Z"),
+    );
+    expect(text).toContain("26 de outubro");
+    expect(text).toContain("das 14:00 às 15:30");
+  });
+
+  it("formata durações", () => {
+    expect(formatDuration(15)).toBe("15 min");
+    expect(formatDuration(60)).toBe("1 h");
+    expect(formatDuration(90)).toBe("1 h 30 min");
+  });
+
+  it("oferece de 15 min a 4 h, de 15 em 15", () => {
+    expect(DURATION_OPTIONS_MIN[0]).toBe(15);
+    expect(DURATION_OPTIONS_MIN.at(-1)).toBe(240);
+    expect(DURATION_OPTIONS_MIN).toHaveLength(16);
   });
 });
