@@ -43,6 +43,9 @@ async function UserMenu() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
+      <Link href="/salas" className="text-ink hover:underline">
+        Salas
+      </Link>
       <span className="flex items-center text-ink" title={user.name}>
         <span className="hidden sm:inline">Olá,&nbsp;</span>
         <strong className="max-w-32 truncate">{firstName}</strong>
