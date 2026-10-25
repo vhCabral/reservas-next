@@ -8,11 +8,13 @@ import { getRoomAvailability } from "@/server/reservations/reservations.service"
 import { listRoomResourcesFor } from "@/server/rooms/room-resources.service";
 import { getRoomFor } from "@/server/rooms/rooms.service";
 import { roomIdSchema } from "@/server/rooms/schemas";
-import { APP_TIMEZONE, buildSchedule } from "../horarios";
+import { APP_TIMEZONE, buildSchedule, dayKey } from "../horarios";
+import { ReservationForm } from "./reservation-form";
 
 export const metadata: Metadata = { title: "Sala" };
 
 const DAYS_AHEAD = 7; // bem abaixo do limite de 31 dias da API
+const MAX_ADVANCE_DAYS = 90; // mesma regra da política de reservas
 
 export default function SalaPage({ params }: PageProps<"/salas/[id]">) {
   return (
@@ -125,10 +127,29 @@ async function RoomDetail({
             </li>
           ))}
         </ul>
-        <p className="text-sm text-muted">
-          Reservar pelo site chega na próxima etapa.
-        </p>
       </section>
+
+      {room.active ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-semibold text-brand-900">Reservar</h2>
+            <p className="text-sm text-muted">
+              Horário de Brasília. Início de 15 em 15 minutos, duração de 15
+              minutos a 4 horas, com até {MAX_ADVANCE_DAYS} dias de
+              antecedência.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-line bg-white p-5">
+            <ReservationForm
+              roomId={room.id}
+              minDate={dayKey(now)}
+              maxDate={dayKey(
+                new Date(now.getTime() + MAX_ADVANCE_DAYS * 24 * 60 * 60 * 1000),
+              )}
+            />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
