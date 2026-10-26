@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { createRoomAction } from "@/app/actions/rooms";
 import { requireAdminOrNotFound } from "@/server/auth/current-user";
 import { RoomForm } from "../room-form";
 
@@ -18,7 +19,14 @@ export default function NovaSalaPage() {
         </Link>
         <h1 className="text-2xl font-semibold text-brand-900">Nova sala</h1>
       </header>
-      <Suspense fallback={<div className="h-64 max-w-xl animate-pulse rounded-2xl border border-line bg-white" aria-hidden="true" />}>
+      <Suspense
+        fallback={
+          <div
+            className="h-64 max-w-xl animate-pulse rounded-2xl border border-line bg-white"
+            aria-hidden="true"
+          />
+        }
+      >
         <NewRoomContent />
       </Suspense>
     </div>
@@ -30,7 +38,11 @@ async function NewRoomContent() {
   await requireAdminOrNotFound();
   return (
     <div className="max-w-xl rounded-2xl border border-line bg-white p-6 shadow-sm">
-      <RoomForm />
+      <RoomForm
+        action={createRoomAction}
+        submitLabel="Criar sala"
+        pendingText="Salvando…"
+      />
     </div>
   );
 }

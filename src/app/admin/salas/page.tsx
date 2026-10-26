@@ -44,7 +44,7 @@ async function AdminRoomList() {
       {rooms.map((room) => (
         <li
           key={room.id}
-          className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-line bg-white p-5 shadow-sm"
+          className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-line bg-white p-5 shadow-sm"
         >
           <div>
             <Link
@@ -58,15 +58,23 @@ async function AdminRoomList() {
               {room.location ? ` · ${room.location}` : ""}
             </p>
           </div>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              room.active
-                ? "bg-green-50 text-green-800"
-                : "bg-slate-100 text-muted"
-            }`}
-          >
-            {room.active ? "Ativa" : "Inativa"}
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                room.active
+                  ? "bg-green-50 text-green-800"
+                  : "bg-slate-100 text-muted"
+              }`}
+            >
+              {room.active ? "Ativa" : "Inativa"}
+            </span>
+            <Link
+              href={`/admin/salas/${room.id}`}
+              className="rounded-full border border-line px-4 py-1.5 text-sm text-ink hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-accent-600"
+            >
+              Editar
+            </Link>
+          </div>
         </li>
       ))}
     </ul>
