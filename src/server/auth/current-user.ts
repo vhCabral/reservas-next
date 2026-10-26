@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { assertAdmin } from "@/server/auth/authorization";
 import { requireUser } from "@/server/auth/session";
 import type { PublicUser } from "@/server/auth/users.repository";
-import { UnauthorizedError } from "@/server/http/errors";
+import { ForbiddenError, UnauthorizedError } from "@/server/http/errors";
 
 // Dados mínimos que a tela pode ver. Nunca devolva o registro inteiro do banco
 // (hash de senha, etc.): o que sai daqui pode ir parar no HTML.
@@ -37,4 +38,21 @@ export async function requireUserOrLogin(): Promise<PublicUser> {
     if (error instanceof UnauthorizedError) redirect("/login");
     throw error;
   }
+}
+
+/**
+ * Para páginas de administração: sem login vai para /login; logado mas sem
+ * ser ADMIN recebe "página não encontrada" (404), igual a uma página que não
+ * existe — não revela que a área de admin está ali. A regra de quem é admin
+ * continua sendo uma só (assertAdmin). O papel vem do banco a cada requisição.
+ */
+export async function requireAdminOrNotFound(): Promise<PublicUser> {
+  const user = await requireUserOrLogin();
+  try {
+    assertAdmin(user);
+  } catch (error) {
+    if (error instanceof ForbiddenError) notFound();
+    throw error;
+  }
+  return user;
 }

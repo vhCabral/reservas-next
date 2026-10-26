@@ -49,6 +49,11 @@ async function UserMenu() {
       <Link href="/minhas-reservas" className="text-ink hover:underline">
         Minhas reservas
       </Link>
+      {user.role === "ADMIN" ? (
+        <Link href="/admin/salas" className="text-ink hover:underline">
+          Administração
+        </Link>
+      ) : null}
       <span className="flex items-center text-ink" title={user.name}>
         <span className="hidden sm:inline">Olá,&nbsp;</span>
         <strong className="max-w-32 truncate">{firstName}</strong>
