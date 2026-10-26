@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { createReservationAction } from "@/app/actions/reservations";
 import { Field } from "@/components/ui/field";
@@ -25,7 +26,15 @@ export function ReservationForm({
   return (
     <form action={formAction} className="space-y-4" noValidate>
       {state?.ok ? (
-        <FormSuccess message={state.message ?? "Reserva confirmada."} />
+        <div className="space-y-2">
+          <FormSuccess message={state.message ?? "Reserva confirmada."} />
+          <Link
+            href="/minhas-reservas"
+            className="text-sm text-accent-600 hover:underline"
+          >
+            Ver minhas reservas
+          </Link>
+        </div>
       ) : (
         <FormError message={state?.message} />
       )}
