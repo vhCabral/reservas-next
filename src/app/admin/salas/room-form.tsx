@@ -2,24 +2,52 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { createRoomAction } from "@/app/actions/rooms";
+import type { FormState } from "@/app/actions/form-state";
 import { Field } from "@/components/ui/field";
-import { FormError } from "@/components/ui/form-message";
+import { FormError, FormSuccess } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { TextareaField } from "@/components/ui/textarea-field";
 
-export function RoomForm() {
-  const [state, formAction] = useActionState(createRoomAction, undefined);
+type RoomFormInitial = {
+  name: string;
+  capacity: string;
+  location: string;
+  description: string;
+};
+
+// Serve para criar e para editar: a página escolhe a Action e os valores iniciais.
+export function RoomForm({
+  action,
+  initial,
+  submitLabel,
+  pendingText,
+}: {
+  action: (
+    prev: FormState | undefined,
+    formData: FormData,
+  ) => Promise<FormState>;
+  initial?: RoomFormInitial;
+  submitLabel: string;
+  pendingText: string;
+}) {
+  const [state, formAction] = useActionState(action, undefined);
+  // O que a pessoa acabou de enviar tem prioridade sobre o valor inicial.
+  const value = (key: keyof RoomFormInitial) =>
+    state?.values?.[key] ?? initial?.[key];
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
-      <FormError message={state?.message} />
+      {state?.ok ? (
+        <FormSuccess message={state.message ?? "Salvo."} />
+      ) : (
+        <FormError message={state?.message} />
+      )}
       <Field
         label="Nome"
         name="name"
         required
         maxLength={120}
-        defaultValue={state?.values?.name}
+        defaultValue={value("name")}
         error={state?.fieldErrors?.name}
       />
       <Field
@@ -30,14 +58,14 @@ export function RoomForm() {
         min={1}
         max={10000}
         required
-        defaultValue={state?.values?.capacity}
+        defaultValue={value("capacity")}
         error={state?.fieldErrors?.capacity}
       />
       <Field
         label="Local (opcional)"
         name="location"
         maxLength={120}
-        defaultValue={state?.values?.location}
+        defaultValue={value("location")}
         error={state?.fieldErrors?.location}
       />
       <TextareaField
@@ -45,18 +73,18 @@ export function RoomForm() {
         name="description"
         rows={4}
         maxLength={500}
-        defaultValue={state?.values?.description}
+        defaultValue={value("description")}
         error={state?.fieldErrors?.description}
       />
       <div className="flex items-center gap-4">
-        <div className="w-40">
-          <SubmitButton pendingText="Salvando…">Criar sala</SubmitButton>
+        <div className="w-44">
+          <SubmitButton pendingText={pendingText}>{submitLabel}</SubmitButton>
         </div>
         <Link
           href="/admin/salas"
           className="text-sm text-accent-600 hover:underline"
         >
-          Cancelar
+          Voltar
         </Link>
       </div>
     </form>
