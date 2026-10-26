@@ -8,7 +8,11 @@ import {
   NotFoundError,
   UnprocessableEntityError,
 } from "@/server/http/errors";
-import { createReservation } from "@/server/reservations/reservations.service";
+import {
+  cancelReservation,
+  createReservation,
+} from "@/server/reservations/reservations.service";
+import { reservationIdSchema } from "@/server/reservations/schemas";
 import { roomIdSchema } from "@/server/rooms/schemas";
 import {
   buildWindow,
@@ -37,6 +41,12 @@ const formSchema = z.object({
     .transform(Number)
     .refine((n) => DURATION_OPTIONS_MIN.includes(n), "Escolha a duração."),
 });
+
+// Atualiza as telas que mostram reservas (agenda da sala e "Minhas reservas").
+function revalidateReservationViews() {
+  revalidatePath("/salas/[id]", "page");
+  revalidatePath("/minhas-reservas");
+}
 
 /**
  * Cria uma reserva. O roomId chega por bind() e a pessoa pode alterá-lo, então
@@ -99,17 +109,54 @@ export async function createReservationAction(
     }
     if (error instanceof UnprocessableEntityError) {
       return {
-        message: translatePolicyProblem(error.message) || FALLBACK_POLICY_MESSAGE,
+        message:
+          translatePolicyProblem(error.message) || FALLBACK_POLICY_MESSAGE,
         values,
       };
     }
     throw error;
   }
 
-  // Atualiza a agenda da página já com a reserva nova.
-  revalidatePath(`/salas/${room.data}`);
+  revalidateReservationViews();
   return {
     ok: true,
     message: `Reserva confirmada: ${describeWindow(window.startAt, window.endAt)}.`,
   };
+}
+
+/**
+ * Cancela uma reserva. O id chega por bind() e pode ser adulterado: o serviço
+ * confere que a reserva é de quem está logado (ou que é ADMIN). Reserva alheia
+ * e reserva inexistente dão o MESMO erro (anti-IDOR).
+ */
+/* eslint-disable @typescript-eslint/no-unused-vars -- assinatura exigida pelo useActionState (estado, formulário) */
+export async function cancelReservationAction(
+  reservationId: string,
+  _prev: FormState | undefined,
+  _formData: FormData,
+): Promise<FormState> {
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+  const actor = await requireUserOrLogin();
+
+  const id = reservationIdSchema.safeParse(reservationId);
+  if (!id.success) {
+    return { message: "Reserva não encontrada." };
+  }
+
+  try {
+    await cancelReservation(actor, id.data);
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return { message: "Reserva não encontrada." };
+    }
+    if (error instanceof UnprocessableEntityError) {
+      return {
+        message: "Essa reserva já começou e não pode mais ser cancelada.",
+      };
+    }
+    throw error;
+  }
+
+  revalidateReservationViews();
+  return { ok: true, message: "Reserva cancelada." };
 }
