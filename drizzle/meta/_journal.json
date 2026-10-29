@@ -22,6 +22,13 @@
       "when": 1792337878685,
       "tag": "0002_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793233821217,
+      "tag": "0003_room_resources_quantity_note",
+      "breakpoints": true
     }
   ]
 }

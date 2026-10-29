@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { createResourceSchema, updateResourceSchema } from "./schemas";
-import { setRoomResourcesSchema } from "@/server/rooms/schemas";
 
 describe("resource schemas", () => {
   it("normaliza o nome e rejeita campos extras", () => {
@@ -16,16 +15,5 @@ describe("resource schemas", () => {
     expect(updateResourceSchema.safeParse({ active: false }).success).toBe(
       true,
     );
-  });
-  it("setRoomResources valida os ids", () => {
-    expect(setRoomResourcesSchema.safeParse({ resourceIds: [] }).success).toBe(
-      true,
-    );
-    expect(
-      setRoomResourcesSchema.safeParse({ resourceIds: ["x"] }).success,
-    ).toBe(false);
-    expect(
-      setRoomResourcesSchema.safeParse({ resourceIds: [], extra: 1 }).success,
-    ).toBe(false);
   });
 });

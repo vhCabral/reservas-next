@@ -51,6 +51,13 @@ export const resourceSummaryResponse = resourceResponse.omit({
   updatedAt: true,
 });
 
+// Recurso DENTRO de uma sala: o resumo do recurso + quantidade e observação do
+// vínculo (ex.: 2 unidades, "Split 24.000 BTU").
+export const roomResourceResponse = resourceSummaryResponse.extend({
+  quantity: z.number().int(),
+  note: z.string().nullable(),
+});
+
 export const reservationResponse = z.object({
   id: z.uuid(),
   userId: z.uuid(),
@@ -133,7 +140,7 @@ const responses = {
   User: userResponse,
   Room: roomResponse,
   Resource: resourceResponse,
-  ResourceSummary: resourceSummaryResponse,
+  RoomResource: roomResourceResponse,
   Reservation: reservationResponse,
   BusyInterval: busyIntervalResponse,
   ErrorBody: errorBodyResponse,
