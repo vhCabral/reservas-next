@@ -66,39 +66,147 @@ describe("recursos da sala", () => {
     const a = await createResource(admin, { name: "test-a" });
     const b = await createResource(admin, { name: "test-b" });
 
-    expect(names(await setRoomResources(admin, room.id, [a.id, b.id]))).toEqual(
-      ["test-a", "test-b"],
-    );
-    await setRoomResources(admin, room.id, [b.id]);
+    expect(
+      names(
+        await setRoomResources(admin, room.id, [
+          { resourceId: a.id },
+          { resourceId: b.id },
+        ]),
+      ),
+    ).toEqual(["test-a", "test-b"]);
+    await setRoomResources(admin, room.id, [{ resourceId: b.id }]);
     expect(names(await listRoomResourcesFor(user, room.id))).toEqual([
       "test-b",
     ]);
   });
 
-  it("USER não altera os recursos da sala", async () => {
+  it("sem quantidade vale 1, e observação vazia ou só com espaços vira null", async () => {
+    const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
+    const a = await createResource(admin, { name: "test-a" });
+    const b = await createResource(admin, { name: "test-b" });
+
+    const list = await setRoomResources(admin, room.id, [
+      { resourceId: a.id },
+      { resourceId: b.id, note: "   " },
+    ]);
+    expect(
+      list.map((r) => ({ name: r.name, quantity: r.quantity, note: r.note })),
+    ).toEqual([
+      { name: "test-a", quantity: 1, note: null },
+      { name: "test-b", quantity: 1, note: null },
+    ]);
+  });
+
+  it("guarda quantidade e observação (sem espaços nas pontas) e USER vê os mesmos dados", async () => {
+    const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
+    const a = await createResource(admin, { name: "test-a" });
+    const b = await createResource(admin, { name: "test-b" });
+
+    await setRoomResources(admin, room.id, [
+      { resourceId: a.id, quantity: 2, note: "  Split 24.000 BTU  " },
+      { resourceId: b.id, quantity: 99 },
+    ]);
+
+    const seenByUser = await listRoomResourcesFor(user, room.id);
+    expect(
+      seenByUser.map((r) => ({
+        name: r.name,
+        quantity: r.quantity,
+        note: r.note,
+      })),
+    ).toEqual([
+      { name: "test-a", quantity: 2, note: "Split 24.000 BTU" },
+      { name: "test-b", quantity: 99, note: null },
+    ]);
+  });
+
+  it("a quantidade e a observação mudam quando o conjunto é substituído", async () => {
+    const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
+    const a = await createResource(admin, { name: "test-a" });
+    await setRoomResources(admin, room.id, [
+      { resourceId: a.id, quantity: 2, note: "antigo" },
+    ]);
+
+    const list = await setRoomResources(admin, room.id, [
+      { resourceId: a.id, quantity: 3 },
+    ]);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ quantity: 3, note: null });
+  });
+
+  it("USER não altera os recursos da sala, nem com lista inválida", async () => {
     const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
     await expect(setRoomResources(user, room.id, [])).rejects.toBeInstanceOf(
       ForbiddenError,
     );
+    // A checagem de admin vem antes da validação: 403, e não 422.
+    await expect(
+      setRoomResources(user, room.id, [{ resourceId: NO_SUCH_ID, quantity: 0 }]),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it("id desconhecido dá 422 e o conjunto anterior é mantido", async () => {
     const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
     const a = await createResource(admin, { name: "test-a" });
-    await setRoomResources(admin, room.id, [a.id]);
+    await setRoomResources(admin, room.id, [{ resourceId: a.id }]);
 
     await expect(
-      setRoomResources(admin, room.id, [a.id, NO_SUCH_ID]),
+      setRoomResources(admin, room.id, [
+        { resourceId: a.id },
+        { resourceId: NO_SUCH_ID },
+      ]),
     ).rejects.toBeInstanceOf(UnprocessableEntityError);
     expect(names(await listRoomResourcesFor(admin, room.id))).toEqual([
       "test-a",
     ]);
   });
 
+  it.each([0, 100, 1.5, -1])(
+    "quantidade %s dá 422 e o conjunto anterior é mantido",
+    async (quantity) => {
+      const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
+      const a = await createResource(admin, { name: "test-a" });
+      await setRoomResources(admin, room.id, [{ resourceId: a.id, quantity: 2 }]);
+
+      await expect(
+        setRoomResources(admin, room.id, [{ resourceId: a.id, quantity }]),
+      ).rejects.toBeInstanceOf(UnprocessableEntityError);
+      expect(await listRoomResourcesFor(admin, room.id)).toMatchObject([
+        { quantity: 2 },
+      ]);
+    },
+  );
+
+  it("observação com mais de 200 caracteres dá 422", async () => {
+    const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
+    const a = await createResource(admin, { name: "test-a" });
+    await expect(
+      setRoomResources(admin, room.id, [
+        { resourceId: a.id, note: "x".repeat(201) },
+      ]),
+    ).rejects.toBeInstanceOf(UnprocessableEntityError);
+    // No limite (200) é aceito.
+    const list = await setRoomResources(admin, room.id, [
+      { resourceId: a.id, note: "x".repeat(200) },
+    ]);
+    expect(list[0]?.note).toHaveLength(200);
+  });
+
+  it("o mesmo recurso duas vezes na lista dá 422", async () => {
+    const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
+    const a = await createResource(admin, { name: "test-a" });
+    await expect(
+      setRoomResources(admin, room.id, [
+        { resourceId: a.id, quantity: 1 },
+        { resourceId: a.id, quantity: 2 },
+      ]),
+    ).rejects.toBeInstanceOf(UnprocessableEntityError);
+  });
+
   it("recurso inativo some para USER, aparece para ADMIN e não pode ser vinculado", async () => {
     const room = await createRoom(admin, { name: "test-sala", capacity: 10 });
     const a = await createResource(admin, { name: "test-a" });
-    await setRoomResources(admin, room.id, [a.id]);
+    await setRoomResources(admin, room.id, [{ resourceId: a.id }]);
     await updateResource(admin, a.id, { active: false });
 
     expect(await listRoomResourcesFor(user, room.id)).toEqual([]);
@@ -106,7 +214,7 @@ describe("recursos da sala", () => {
       "test-a",
     ]);
     await expect(
-      setRoomResources(admin, room.id, [a.id]),
+      setRoomResources(admin, room.id, [{ resourceId: a.id }]),
     ).rejects.toBeInstanceOf(UnprocessableEntityError);
   });
 

@@ -22,9 +22,9 @@ export const PUT = route<Ctx>(async (request, { params }) => {
   const actor = await requireUser();
   assertAdmin(actor);
   const roomId = roomIdSchema.parse((await params).id);
-  const { resourceIds } = setRoomResourcesSchema.parse(await readJson(request));
+  const { items } = setRoomResourcesSchema.parse(await readJson(request));
   return NextResponse.json(
-    await setRoomResources(actor, roomId, resourceIds),
+    await setRoomResources(actor, roomId, items),
     noStore,
   );
 });

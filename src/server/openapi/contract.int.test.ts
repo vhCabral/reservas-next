@@ -36,7 +36,7 @@ import {
   errorBodyResponse,
   reservationResponse,
   resourceResponse,
-  resourceSummaryResponse,
+  roomResourceResponse,
   roomResponse,
   userResponse,
 } from "./components";
@@ -151,11 +151,13 @@ describe("contrato: respostas da API == documentação OpenAPI", () => {
     expectListMatches(resourceResponse, await listResourcesFor(ana, false));
 
     expectListMatches(
-      resourceSummaryResponse,
-      await setRoomResources(admin, roomId, [projector.id]),
+      roomResourceResponse,
+      await setRoomResources(admin, roomId, [
+        { resourceId: projector.id, quantity: 2, note: "4K" },
+      ]),
     );
     expectListMatches(
-      resourceSummaryResponse,
+      roomResourceResponse,
       await listRoomResourcesFor(ana, roomId),
     );
   });

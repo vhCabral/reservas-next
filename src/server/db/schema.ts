@@ -65,7 +65,10 @@ export const resources = pgTable("resources", {
   ...timestamps,
 });
 
-// Muitos para muitos: uma sala tem vários recursos e um recurso está em várias salas.
+// Muitos para muitos: uma sala tem vários recursos e um recurso está em várias
+// salas. Quantidade e observação (ex.: o modelo do aparelho) pertencem ao
+// VÍNCULO, não ao recurso: o mesmo "Projetor" tem modelo e quantidade
+// diferentes em cada sala.
 export const roomResources = pgTable(
   "room_resources",
   {
@@ -75,10 +78,13 @@ export const roomResources = pgTable(
     resourceId: uuid("resource_id")
       .notNull()
       .references(() => resources.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    note: varchar("note", { length: 200 }),
   },
   (t) => [
     primaryKey({ columns: [t.roomId, t.resourceId] }),
     index("room_resources_resource_id_idx").on(t.resourceId),
+    check("room_resources_quantity_range", sql`${t.quantity} between 1 and 99`),
   ],
 );
 

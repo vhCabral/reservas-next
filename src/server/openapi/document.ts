@@ -230,7 +230,7 @@ export function buildOpenApiDocument(): Json {
           responses: {
             "200": {
               description: "Resources",
-              content: jsonContent(arrayOf("ResourceSummary")),
+              content: jsonContent(arrayOf("RoomResource")),
             },
             ...errors(400, 401, 404),
           },
@@ -245,7 +245,7 @@ export function buildOpenApiDocument(): Json {
           responses: {
             "200": {
               description: "New set of resources",
-              content: jsonContent(arrayOf("Resource")),
+              content: jsonContent(arrayOf("RoomResource")),
             },
             ...errors(400, 401, 403, 404, 409),
           },
