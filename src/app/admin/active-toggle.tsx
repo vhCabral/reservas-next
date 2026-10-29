@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { setRoomActiveAction } from "@/app/actions/rooms";
+import type { FormState } from "@/app/actions/form-state";
 import { FormError } from "@/components/ui/form-message";
 
 function ConfirmSubmit({
@@ -30,20 +30,26 @@ function ConfirmSubmit({
   );
 }
 
-// Desativar pede confirmação (some para os usuários); reativar é direto.
-// A página usa key={active}: ao mudar a situação, o componente recomeça limpo.
+// Botão de ativar/desativar reaproveitado por salas e recursos. A página passa
+// a Action já pronta (com o id e o novo valor de "active" presos por bind()).
+// Desativar pede confirmação; reativar é direto. A página usa key={active}: ao
+// mudar a situação, o componente recomeça limpo.
 export function ActiveToggle({
-  roomId,
   active,
+  action,
+  noun,
+  deactivateWarning,
 }: {
-  roomId: string;
   active: boolean;
+  action: (
+    prev: FormState | undefined,
+    formData: FormData,
+  ) => Promise<FormState>;
+  noun: string; // "sala" ou "recurso"
+  deactivateWarning: string;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const [state, formAction] = useActionState(
-    setRoomActiveAction.bind(null, roomId, !active),
-    undefined,
-  );
+  const [state, formAction] = useActionState(action, undefined);
 
   if (!active) {
     return (
@@ -51,7 +57,7 @@ export function ActiveToggle({
         <FormError message={state?.message} />
         <ConfirmSubmit
           danger={false}
-          label="Reativar sala"
+          label={`Reativar ${noun}`}
           pendingLabel="Reativando…"
         />
       </form>
@@ -65,7 +71,7 @@ export function ActiveToggle({
         onClick={() => setConfirming(true)}
         className="rounded-full border border-line px-4 py-1.5 text-sm text-ink hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-accent-600"
       >
-        Desativar sala
+        {`Desativar ${noun}`}
       </button>
     );
   }
@@ -73,10 +79,7 @@ export function ActiveToggle({
   return (
     <form action={formAction} className="space-y-2">
       <FormError message={state?.message} />
-      <p className="max-w-md text-sm text-ink">
-        Desativar esta sala? Ela some para os usuários e deixa de aceitar novas
-        reservas. As reservas já feitas continuam existindo.
-      </p>
+      <p className="max-w-md text-sm text-ink">{deactivateWarning}</p>
       <div className="flex gap-2">
         <ConfirmSubmit
           danger

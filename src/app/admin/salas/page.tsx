@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdminOrNotFound } from "@/server/auth/current-user";
 import { listRoomsFor } from "@/server/rooms/rooms.service";
+import { AdminNav } from "../admin-nav";
 
 export const metadata: Metadata = { title: "Administração: salas" };
 
@@ -23,6 +24,7 @@ export default function AdminSalasPage() {
           Nova sala
         </Link>
       </header>
+      <AdminNav current="salas" />
       <Suspense fallback={<ListSkeleton />}>
         <AdminRoomList />
       </Suspense>

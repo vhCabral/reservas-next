@@ -3,42 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRoomForm } from "@/app/admin/salas/form";
-import { assertAdmin } from "@/server/auth/authorization";
 import { requireUserOrLogin } from "@/server/auth/current-user";
-import type { PublicUser } from "@/server/auth/users.repository";
 import { ForbiddenError, NotFoundError } from "@/server/http/errors";
 import { createRoom, updateRoom } from "@/server/rooms/rooms.service";
 import { roomIdSchema, updateRoomSchema } from "@/server/rooms/schemas";
 import type { FormState } from "./form-state";
+import { adminProblem, formText, NOT_ALLOWED } from "./guard";
 
-const NOT_ALLOWED = "Você não tem permissão para esta ação.";
 const ROOM_NOT_FOUND = "Sala não encontrada.";
-
-function text(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 function readRoomForm(formData: FormData) {
   return {
-    name: text(formData, "name"),
-    capacity: text(formData, "capacity"),
-    location: text(formData, "location"),
-    description: text(formData, "description"),
+    name: formText(formData, "name"),
+    capacity: formText(formData, "capacity"),
+    location: formText(formData, "location"),
+    description: formText(formData, "description"),
   };
-}
-
-// Devolve a mensagem de erro se NÃO for admin; null se for. Uma Server Action é
-// um endpoint POST que qualquer pessoa pode chamar na mão: esta checagem vem
-// ANTES de tudo, e o serviço confere de novo (defesa em duas camadas).
-function adminProblem(actor: PublicUser): string | null {
-  try {
-    assertAdmin(actor);
-    return null;
-  } catch (error) {
-    if (error instanceof ForbiddenError) return NOT_ALLOWED;
-    throw error;
-  }
 }
 
 // Telas que mostram dados de sala: admin (lista e edição) e públicas.
