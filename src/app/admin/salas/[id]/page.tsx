@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { updateRoomAction } from "@/app/actions/rooms";
+import { setRoomActiveAction, updateRoomAction } from "@/app/actions/rooms";
 import { requireAdminOrNotFound } from "@/server/auth/current-user";
 import { NotFoundError } from "@/server/http/errors";
 import { getRoomFor } from "@/server/rooms/rooms.service";
 import { roomIdSchema } from "@/server/rooms/schemas";
 import { RoomForm } from "../room-form";
-import { ActiveToggle } from "./active-toggle";
+import { ActiveToggle } from "../../active-toggle";
 
 export const metadata: Metadata = { title: "Editar sala" };
 
@@ -75,7 +75,13 @@ async function EditRoomContent({
             {room.active ? "Ativa" : "Inativa"}
           </span>
         </div>
-        <ActiveToggle key={String(room.active)} roomId={room.id} active={room.active} />
+        <ActiveToggle
+          key={String(room.active)}
+          active={room.active}
+          action={setRoomActiveAction.bind(null, room.id, !room.active)}
+          noun="sala"
+          deactivateWarning="Desativar esta sala? Ela some para os usuários e deixa de aceitar novas reservas. As reservas já feitas continuam existindo."
+        />
       </section>
 
       <section className="rounded-2xl border border-line bg-white p-6 shadow-sm">
