@@ -3,11 +3,16 @@ import Link from "next/link";
 const ITEMS = [
   { key: "salas", href: "/admin/salas", label: "Salas" },
   { key: "recursos", href: "/admin/recursos", label: "Recursos" },
+  { key: "reservas", href: "/admin/reservas", label: "Reservas" },
 ] as const;
 
 // Navegação entre as áreas de administração. É só conveniência: quem protege
 // cada área é a própria página (requireAdminOrNotFound) e as Actions.
-export function AdminNav({ current }: { current: "salas" | "recursos" }) {
+export function AdminNav({
+  current,
+}: {
+  current: "salas" | "recursos" | "reservas";
+}) {
   return (
     <nav aria-label="Administração" className="flex gap-2">
       {ITEMS.map((item) => (

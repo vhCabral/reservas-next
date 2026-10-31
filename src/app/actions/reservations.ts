@@ -42,10 +42,12 @@ const formSchema = z.object({
     .refine((n) => DURATION_OPTIONS_MIN.includes(n), "Escolha a duração."),
 });
 
-// Atualiza as telas que mostram reservas (agenda da sala e "Minhas reservas").
+// Atualiza as telas que mostram reservas (agenda da sala, "Minhas reservas" e
+// a lista de reservas da administração).
 function revalidateReservationViews() {
   revalidatePath("/salas/[id]", "page");
   revalidatePath("/minhas-reservas");
+  revalidatePath("/admin/reservas");
 }
 
 /**
