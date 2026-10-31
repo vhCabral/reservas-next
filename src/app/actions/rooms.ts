@@ -3,8 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRoomForm } from "@/app/admin/salas/form";
+import {
+  parseRoomResourcesForm,
+  type RoomResourceRow,
+} from "@/app/admin/salas/resources-form";
 import { requireUserOrLogin } from "@/server/auth/current-user";
-import { ForbiddenError, NotFoundError } from "@/server/http/errors";
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnprocessableEntityError,
+} from "@/server/http/errors";
+import { setRoomResources } from "@/server/rooms/room-resources.service";
 import { createRoom, updateRoom } from "@/server/rooms/rooms.service";
 import { roomIdSchema, updateRoomSchema } from "@/server/rooms/schemas";
 import type { FormState } from "./form-state";
@@ -113,6 +122,59 @@ export async function updateRoomAction(
       description: parsed.data.description ?? "",
     },
   };
+}
+
+/**
+ * Substitui os recursos da sala (marcados no formulário, com quantidade e
+ * observação). O roomId vem por bind() e os campos vêm do formulário: tudo é
+ * entrada não confiável. Quem não é admin é barrado ANTES de qualquer leitura
+ * dos campos, e o serviço confere de novo.
+ */
+export async function setRoomResourcesAction(
+  roomId: string,
+  _prev: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
+  const actor = await requireUserOrLogin();
+
+  const denied = adminProblem(actor);
+  if (denied) return { message: denied };
+
+  const id = roomIdSchema.safeParse(roomId);
+  if (!id.success) return { message: ROOM_NOT_FOUND };
+
+  // Só os recursos marcados são enviados ("resourceId" repetido, um por marca).
+  // Os campos de quantidade e observação são procurados pelo id de cada um.
+  const rows: RoomResourceRow[] = formData
+    .getAll("resourceId")
+    .filter((value): value is string => typeof value === "string")
+    .map((resourceId) => ({
+      resourceId,
+      quantity: formText(formData, `quantity-${resourceId}`),
+      note: formText(formData, `note-${resourceId}`),
+    }));
+
+  const parsed = parseRoomResourcesForm(rows);
+  if (!parsed.ok) {
+    return { message: parsed.message, fieldErrors: parsed.fieldErrors };
+  }
+
+  try {
+    await setRoomResources(actor, id.data, parsed.data.items);
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { message: NOT_ALLOWED };
+    if (error instanceof NotFoundError) return { message: ROOM_NOT_FOUND };
+    if (error instanceof UnprocessableEntityError) {
+      return {
+        message:
+          "Algum recurso não existe mais ou foi desativado. Recarregue a página e tente de novo.",
+      };
+    }
+    throw error;
+  }
+
+  revalidateRoomViews();
+  return { ok: true, message: "Recursos da sala salvos." };
 }
 
 /**
