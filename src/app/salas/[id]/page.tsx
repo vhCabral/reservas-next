@@ -86,7 +86,9 @@ async function RoomDetail({
                 title={r.description ?? undefined}
                 className="rounded-full bg-accent-50 px-3 py-1 text-sm text-brand-900"
               >
+                {r.quantity > 1 ? `${r.quantity}× ` : ""}
                 {r.name}
+                {r.note ? ` — ${r.note}` : ""}
               </li>
             ))}
           </ul>
@@ -163,3 +165,4 @@ function DetailSkeleton() {
     </div>
   );
 }
+
